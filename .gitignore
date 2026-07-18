@@ -1,0 +1,25 @@
+# Python Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+
+# Environment Variables & Secrets
+.env
+
+# Python Cache & Byte-compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution & Packaging
+build/
+dist/
+*.egg-info/
+
+# OS-specific files (macOS & Windows)
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db

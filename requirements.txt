@@ -1,0 +1,11 @@
+twifork
+pandas
+Sastrawi
+nltk
+scikit-learn
+matplotlib
+seaborn
+wordcloud
+imbalanced-learn
+httpx
+python-dotenv
