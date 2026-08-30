@@ -5,20 +5,26 @@ Laporan ini menyajikan analisis sentimen komentar X (Twitter) terkait kebijakan 
 ---
 
 ## 1. Distribusi Sentimen Masyarakat
-Berdasarkan data 498 tweet bersih, distribusi kelas sentimen yang diperoleh adalah:
-- **Sentimen Negatif**: 353 tweet (70.9%)
-- **Sentimen Positif**: 82 tweet (16.5%)
-- **Sentimen Netral**: 63 tweet (12.6%)
+Berdasarkan data **2.992 tweet bersih** (dari 3.003 data mentah hasil crawling), distribusi kelas sentimen yang diperoleh adalah:
+- **Sentimen Negatif**: 2.082 tweet (69.6%)
+- **Sentimen Positif**: 479 tweet (16.0%)
+- **Sentimen Netral**: 431 tweet (14.4%)
 
-Hal ini menunjukkan mayoritas masyarakat merespon **Negatif** terhadap kenaikan harga Pertamax karena memicu antrean panjang dan kelangkaan Pertalite (migrasi konsumen).
+Hal ini menunjukkan mayoritas masyarakat merespon **Negatif** terhadap isu kenaikan harga Pertamax karena memicu antrean panjang dan kelangkaan Pertalite (migrasi konsumen).
 
 ---
 
 ## 2. Performa Model SVM (Grid Search)
 Dari pencarian Grid Search CV (5-Fold Cross Validation), kernel **RBF** terpilih sebagai yang terbaik:
-- **Akurasi Global**: 66%
-- **Macro F1-Score**: 0.49
-- **Best Parameter**: `{'C': 100, 'gamma': 'auto', 'kernel': 'rbf'}`
+- **Akurasi Global**: 79% (meningkat signifikan dari 66% pada dataset awal)
+- **Macro F1-Score**: 0.68 (meningkat dari 0.49)
+- **Weighted F1-Score**: 0.79
+- **Best Parameter**: `{'C': 1, 'gamma': 1, 'kernel': 'rbf'}`
+
+### Ringkasan Metrik per Kelas:
+- **Negative**: Precision 0.90 | Recall 0.88 | F1-Score 0.89 (Support: 417)
+- **Neutral**: Precision 0.55 | Recall 0.64 | F1-Score 0.59 (Support: 86)
+- **Positive**: Precision 0.58 | Recall 0.55 | F1-Score 0.57 (Support: 96)
 
 ---
 

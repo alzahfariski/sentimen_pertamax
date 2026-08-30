@@ -10,10 +10,29 @@ from sklearn.metrics import classification_report, confusion_matrix
 from wordcloud import WordCloud
 from imblearn.over_sampling import SMOTE
 
+# Unbuffered print
+import builtins
+_orig_print = builtins.print
+def print(*args, **kwargs):
+    kwargs.setdefault('flush', True)
+    return _orig_print(*args, **kwargs)
+
 def train_and_evaluate():
     labeled_path = "data/processed/labeled_tweets.csv"
-    artifact_dir = "/Users/alzahfariski/.gemini/antigravity/brain/a08df006-7f51-41d8-841b-10917e4e54c8"
     processed_dir = "data/processed"
+    artifact_dir = os.getenv('ARTIFACT_DIR')
+    
+    os.makedirs(processed_dir, exist_ok=True)
+    if artifact_dir:
+        os.makedirs(artifact_dir, exist_ok=True)
+
+    def save_plot(filename):
+        plt.savefig(os.path.join(processed_dir, filename), dpi=150)
+        if artifact_dir and os.path.isdir(artifact_dir):
+            try:
+                plt.savefig(os.path.join(artifact_dir, filename), dpi=150)
+            except Exception:
+                pass
     
     if not os.path.exists(labeled_path):
         print(f"Error: {labeled_path} not found. Please label data first.")
@@ -149,8 +168,7 @@ def train_and_evaluate():
     plt.xlabel('Sentiment')
     plt.ylabel('Count')
     plt.tight_layout()
-    plt.savefig(os.path.join(processed_dir, "sentiment_distribution.png"), dpi=150)
-    plt.savefig(os.path.join(artifact_dir, "sentiment_distribution.png"), dpi=150)
+    save_plot("sentiment_distribution.png")
     plt.close()
     
     # Plot 2: Confusion Matrix Heatmap
@@ -160,8 +178,7 @@ def train_and_evaluate():
     plt.ylabel('Actual Sentiment')
     plt.xlabel('Predicted Sentiment')
     plt.tight_layout()
-    plt.savefig(os.path.join(processed_dir, "confusion_matrix.png"), dpi=150)
-    plt.savefig(os.path.join(artifact_dir, "confusion_matrix.png"), dpi=150)
+    save_plot("confusion_matrix.png")
     plt.close()
     
     # Plot 3 & 4: Word Clouds for Positive and Negative sentiments
@@ -175,8 +192,7 @@ def train_and_evaluate():
         plt.axis('off')
         plt.title('Word Cloud - Positive Sentiments')
         plt.tight_layout()
-        plt.savefig(os.path.join(processed_dir, "positive_wordcloud.png"), dpi=150)
-        plt.savefig(os.path.join(artifact_dir, "positive_wordcloud.png"), dpi=150)
+        save_plot("positive_wordcloud.png")
         plt.close()
         
     # Negative Word Cloud
@@ -188,8 +204,7 @@ def train_and_evaluate():
         plt.axis('off')
         plt.title('Word Cloud - Negative Sentiments')
         plt.tight_layout()
-        plt.savefig(os.path.join(processed_dir, "negative_wordcloud.png"), dpi=150)
-        plt.savefig(os.path.join(artifact_dir, "negative_wordcloud.png"), dpi=150)
+        save_plot("negative_wordcloud.png")
         plt.close()
         
     print("\nAll plots generated and saved successfully to data/processed/ and the artifact folder.")

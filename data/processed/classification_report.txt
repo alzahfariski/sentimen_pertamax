@@ -1,18 +1,18 @@
 === CLASSIFICATION REPORT ===
               precision    recall  f1-score   support
 
-    Negative       0.89      0.77      0.83        71
-     Neutral       0.31      0.31      0.31        13
-    Positive       0.28      0.44      0.34        16
+    Negative       0.90      0.88      0.89       417
+     Neutral       0.55      0.64      0.59        86
+    Positive       0.58      0.55      0.57        96
 
-    accuracy                           0.66       100
-   macro avg       0.49      0.51      0.49       100
-weighted avg       0.71      0.66      0.68       100
+    accuracy                           0.79       599
+   macro avg       0.68      0.69      0.68       599
+weighted avg       0.80      0.79      0.79       599
 
-Best parameters: {'C': 100, 'gamma': 'auto', 'kernel': 'rbf'}
+Best parameters: {'C': 1, 'gamma': 1, 'kernel': 'rbf'}
 
 === KERNEL PERFORMANCE COMPARISON ===
-Kernel                                               Best Params  Mean CV Macro F1
-linear                              {'C': 1, 'kernel': 'linear'}          0.554714
-   rbf              {'C': 100, 'gamma': 'auto', 'kernel': 'rbf'}          0.578063
-  poly {'C': 1, 'degree': 2, 'gamma': 'scale', 'kernel': 'poly'}          0.486650
+Kernel                                         Best Params  Mean CV Macro F1
+linear                        {'C': 1, 'kernel': 'linear'}          0.639363
+   rbf               {'C': 1, 'gamma': 1, 'kernel': 'rbf'}          0.659505
+  poly {'C': 1, 'degree': 2, 'gamma': 1, 'kernel': 'poly'}          0.634921
