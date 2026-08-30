@@ -161,10 +161,12 @@ async def fetch_with_rate_limit_retry(fetch_fn, action_name="fetching tweets", m
 
 async def main():
     parser = argparse.ArgumentParser(description="Twitter / X Crawling Script untuk Sentimen PPN 12%")
-    parser.add_argument('--limit', type=int, default=3000, help='Target minimum jumlah tweet (default: 3000)')
+    parser.add_argument('--limit', type=int, default=None, help='Target total absolut jumlah tweet (opsional)')
+    parser.add_argument('--add-limit', type=int, default=3000, help='Target jumlah tweet baru yang ingin ditambahkan (default: 3000)')
     parser.add_argument('--output', type=str, default='data/raw/tweets1.csv', help='Path output file CSV (default: data/raw/tweets1.csv)')
-    parser.add_argument('--query', type=str, default='("ppn 12%" OR "ppn naik" OR "kenaikan ppn" OR "kenaikan pajak" OR "ppn 12 persen" OR "pajak 12%")', 
-                        help='Query pencarian Twitter (tanpa filter periode waktu)')
+    parser.add_argument('--since', type=str, default='2024-10-01', help='Tanggal awal periode (default: 2024-10-01)')
+    parser.add_argument('--until', type=str, default='2024-12-31', help='Tanggal akhir periode (default: 2024-12-31)')
+    parser.add_argument('--query', type=str, default=None, help='Query kustom penuh (opsional)')
     parser.add_argument('--no-filter', action='store_true', help='Nonaktifkan filter relevansi teks tweet')
     args = parser.parse_args()
 
@@ -173,10 +175,19 @@ async def main():
         print("Error: TWITTER_AUTH_TOKEN is missing in .env file or environment.")
         return
         
-    limit = args.limit
     output_file = os.path.abspath(args.output)
-    query = args.query
     filter_relevance = not args.no_filter
+    
+    # Susun query pencarian
+    base_keywords = '("ppn 12%" OR "ppn naik" OR "kenaikan ppn" OR "kenaikan pajak" OR "ppn 12 persen" OR "pajak 12%")'
+    if args.query:
+        query = args.query
+    elif args.since and args.until:
+        query = f"{base_keywords} since:{args.since} until:{args.until}"
+    elif args.since:
+        query = f"{base_keywords} since:{args.since}"
+    else:
+        query = base_keywords
     
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     
@@ -206,18 +217,10 @@ async def main():
     client = Client('en-US')
     client.set_cookies(cookies)
     
-    print(f"\n==========================================")
-    print(f"Target Query      : {query}")
-    print(f"Target Kuota      : {limit} tweets")
-    print(f"File Output       : {output_file}")
-    print(f"Filter Waktu      : Tidak ada (murni berdasarkan kuota & relevansi)")
-    print(f"Filter Relevansi  : {'Aktif (hanya tweet dengan teks terkait)' if filter_relevance else 'Nonaktif'}")
-    print(f"==========================================\n")
-    
     all_tweets = []
     seen_ids = set()
     
-    # Muat data yang sudah pernah terkumpul sebelumnya jika ada (Resume capability)
+    # Muat data yang sudah pernah terkumpul sebelumnya jika ada
     if os.path.exists(output_file):
         try:
             existing_df = pd.read_csv(output_file, dtype={'tweet_id': str}, encoding='utf-8-sig')
@@ -227,12 +230,28 @@ async def main():
                     seen_ids.add(t_id)
                     all_tweets.append(row.to_dict())
             print(f"[INFO] Ditemukan {len(all_tweets)} tweet yang sudah tersimpan sebelumnya di {output_file}.")
-            if len(all_tweets) >= limit:
-                print(f"[INFO] Target {limit} tweet sudah tercapai! Tidak perlu crawling lagi.")
-                return
-            print(f"[INFO] Melanjutkan pengumpulan sisa {limit - len(all_tweets)} tweet...")
         except Exception as e:
             print(f"[WARNING] Gagal memuat data lama dari {output_file}: {e}")
+            
+    initial_count = len(all_tweets)
+    if args.limit is not None:
+        target_limit = args.limit
+    else:
+        target_limit = initial_count + args.add_limit
+        
+    print(f"\n==========================================")
+    print(f"Target Query      : {query}")
+    print(f"Periode Crawling  : {args.since or '-'} s/d {args.until or '-'}")
+    print(f"Data Sebelumnya   : {initial_count} tweets")
+    print(f"Target Penambahan : {target_limit - initial_count} tweets baru")
+    print(f"Target Total Kuota: {target_limit} tweets")
+    print(f"File Output       : {output_file}")
+    print(f"Filter Relevansi  : {'Aktif (hanya tweet dengan teks terkait)' if filter_relevance else 'Nonaktif'}")
+    print(f"==========================================\n")
+    
+    if initial_count >= target_limit:
+        print(f"[INFO] Target {target_limit} tweet sudah terpenuhi (sudah ada {initial_count} tweet). Tidak perlu crawling lagi.")
+        return
     
     try:
         # Initial search dengan penanganan rate limit
@@ -255,7 +274,7 @@ async def main():
                 all_tweets.append(info)
                 initial_new += 1
         
-        print(f"Initial page: {len(tweets)} tweets ({initial_new} lolos & baru). Total sekarang: {len(all_tweets)}/{limit}")
+        print(f"Initial page: {len(tweets)} tweets ({initial_new} lolos & baru). Total sekarang: {len(all_tweets)}/{target_limit}")
         if initial_new > 0:
             save_data(all_tweets, output_file)
         
@@ -263,12 +282,12 @@ async def main():
         page = 1
         consecutive_empty_batches = 0
         
-        while len(all_tweets) < limit:
+        while len(all_tweets) < target_limit:
             # Delay antara 4.0 - 7.0 detik untuk menjaga kestabilan request
             delay = random.uniform(4.0, 7.0)
             await asyncio.sleep(delay)
             
-            print(f"Fetching page {page + 1}... (Terkumpul: {len(all_tweets)}/{limit})")
+            print(f"Fetching page {page + 1}... (Terkumpul: {len(all_tweets)}/{target_limit})")
             
             next_tweets = await fetch_with_rate_limit_retry(
                 lambda: tweets.next(),
@@ -278,7 +297,7 @@ async def main():
             if not next_tweets or len(next_tweets) == 0:
                 consecutive_empty_batches += 1
                 if consecutive_empty_batches >= 3:
-                    print("[INFO] Twitter tidak mengembalikan tweet lagi (mencapai akhir timeline pencarian).")
+                    print("[INFO] Twitter tidak mengembalikan tweet lagi (mencapai batas akhir timeline pencarian periode ini).")
                     break
                 print("[INFO] Halaman kosong dari Twitter, mencoba halaman berikutnya...")
                 tweets = next_tweets
@@ -297,7 +316,7 @@ async def main():
                     all_tweets.append(info)
                     new_tweets_count += 1
             
-            print(f"  -> Halaman {page + 1}: {len(next_tweets)} tweet diterima ({new_tweets_count} lolos & baru). Total: {len(all_tweets)}/{limit}")
+            print(f"  -> Halaman {page + 1}: {len(next_tweets)} tweet diterima ({new_tweets_count} lolos & baru). Total: {len(all_tweets)}/{target_limit}")
             
             # Autosave setiap kali ada tweet baru
             if new_tweets_count > 0:
@@ -311,7 +330,7 @@ async def main():
         
     save_data(all_tweets, output_file)
     print(f"\n==========================================")
-    print(f"Crawling selesai! Total tweet tersimpan: {len(all_tweets)} ke {output_file}")
+    print(f"Crawling selesai! Total akhir tweet tersimpan: {len(all_tweets)} ke {output_file}")
     print(f"==========================================")
 
 if __name__ == '__main__':
