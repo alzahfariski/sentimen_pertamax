@@ -33,7 +33,7 @@ def save_data(tweets_list, filepath):
     """Menyimpan list tweet ke file CSV."""
     if tweets_list:
         df = pd.DataFrame(tweets_list)
-        df.to_csv(filepath, index=False, encoding='utf-8')
+        df.to_csv(filepath, index=False, encoding='utf-8', lineterminator='\n')
 
 async def fetch_with_rate_limit_retry(fetch_fn, action_name="fetching tweets", max_retries=30):
     """

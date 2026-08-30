@@ -159,7 +159,7 @@ def label_data():
     print(df['sentiment'].value_counts())
     
     # Save labeled data
-    df.to_csv(labeled_path, index=False, encoding='utf-8')
+    df.to_csv(labeled_path, index=False, encoding='utf-8', lineterminator='\n')
     print(f"\nSaved labeled dataset to {labeled_path}")
     
     # Print sample of each class

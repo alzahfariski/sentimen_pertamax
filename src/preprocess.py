@@ -78,7 +78,8 @@ def preprocess_dataframe():
     
     print("Preprocessing tweets (this may take a couple of minutes due to stemming)...")
     for idx, row in df.iterrows():
-        original_text = row['text']
+        raw_text = str(row['text']) if pd.notna(row.get('text')) else ""
+        original_text = re.sub(r'\s+', ' ', raw_text.replace('\r', ' ').replace('\n', ' ')).strip()
         
         # 1 & 2. Cleaning and Case folding
         cleaned = clean_text(original_text)
@@ -97,11 +98,14 @@ def preprocess_dataframe():
         else:
             stemmed = ""
             
+        user_name = re.sub(r'\s+', ' ', str(row['user_name']).replace('\r', ' ').replace('\n', ' ')).strip()
+        screen_name = re.sub(r'\s+', ' ', str(row['screen_name']).replace('\r', ' ').replace('\n', ' ')).strip()
+        
         preprocessed_data.append({
-            'tweet_id': row['tweet_id'],
-            'created_at': row['created_at'],
-            'user_name': row['user_name'],
-            'screen_name': row['screen_name'],
+            'tweet_id': str(row['tweet_id']),
+            'created_at': str(row['created_at']),
+            'user_name': user_name,
+            'screen_name': screen_name,
             'original_text': original_text,
             'cleaned_text': cleaned,
             'normalized_text': " ".join(normalized_words),
@@ -120,7 +124,7 @@ def preprocess_dataframe():
     
     # Save to CSV
     os.makedirs(os.path.dirname(processed_tweets_path), exist_ok=True)
-    df_processed.to_csv(processed_tweets_path, index=False, encoding='utf-8')
+    df_processed.to_csv(processed_tweets_path, index=False, encoding='utf-8', lineterminator='\n')
     print(f"Saved preprocessed data to {processed_tweets_path}")
     
     # Show samples
